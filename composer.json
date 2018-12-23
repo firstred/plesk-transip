@@ -4,7 +4,8 @@
   "require": {
     "php": "^7.1",
     "hiddeco/transip": "^5.7",
-    "ext-json": "*"
+    "ext-json": "*",
+    "ext-soap": "*"
   },
   "license": "MIT",
   "config": {
