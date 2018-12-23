@@ -1,6 +1,11 @@
 # TransIP DNS Extension for Plesk 17.8+
 ![TransIP](transipplesk.png)
 
+## Requirements
+- PHP 7.1+ 
+- Plesk 17.8 or higher
+- One or more domains hosted with TransIP and API access
+
 ## How to install
 
 - Navigate to the releases tab: https://github.com/firstred/plesk-transip/releases/latest
