@@ -107,6 +107,7 @@ class Modules_Transip_List_Domains extends pm_View_List_Simple
             ];
         }
 
+        $data = [];
         foreach ($listDomains as $id => $domain) {
             $urlId = urlencode($id);
             $data[$id] = [
