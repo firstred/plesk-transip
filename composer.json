@@ -5,7 +5,8 @@
     "php": "^7.1",
     "hiddeco/transip": "^5.7",
     "ext-json": "*",
-    "ext-soap": "*"
+    "ext-soap": "*",
+    "ext-zlib": "*"
   },
   "license": "MIT",
   "config": {
@@ -16,5 +17,8 @@
       "name": "Michael Dekker",
       "email": "info@trendweb.io"
     }
-  ]
+  ],
+  "require-dev": {
+    "plesk/pm-api-stubs": "^17.9"
+  }
 }
