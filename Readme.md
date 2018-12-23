@@ -1,5 +1,7 @@
 # TransIP DNS Extension for Plesk 17.8+
-![TransIP](transipplesk.png)
+![TransIP](transipplesk.png)  
+
+![TransIP settings](src/_meta/screenshots/1.png)
 
 ## Requirements
 - PHP 7.1+ 
