@@ -1,0 +1,19 @@
+{
+  "name": "firstred/plesk-transip",
+  "description": "TransIP DNS connector for Plesk",
+  "require": {
+    "php": "^7.1",
+    "hiddeco/transip": "^5.7",
+    "ext-json": "*"
+  },
+  "license": "MIT",
+  "config": {
+    "vendor-dir": "src/plib/vendor"
+  },
+  "authors": [
+    {
+      "name": "Michael Dekker",
+      "email": "info@trendweb.io"
+    }
+  ]
+}
