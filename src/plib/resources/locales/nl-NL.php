@@ -61,5 +61,5 @@ $messages = [
     'domainsProcessed'               => 'De domeinen zijn verwerkt',
     'overrideTtlLabel'               => 'Override TTL',
     'overrideTtlHint'                => 'Please enter a value in seconds. Leave empty to use Plesk\'s default.',
-    'syncNewDopmainsLabel'           => 'Synchroniseer nieuwe domeinen automatisch',
+    'syncNewDopmainsLabel'           => 'Automatisch nieuwe domeinen synchroniseren',
 ];
