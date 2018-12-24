@@ -22,35 +22,14 @@
  * IN THE SOFTWARE.
  *
  * @copyright 2018-2019 Michael Dekker
- * @author Michael Dekker <info@trendweb.io>
+ * @author Michael Dekker <git@michaeldekker.nl>
  * @license MIT
  */
 
-/**
- * Class Modules_Transip_EventListener
- */
-class Modules_Transip_EventListener implements EventListener
-{
-    public function filterActions()
-    {
-        return [
-            'domain_dns_update',
-        ];
-    }
+$adapter = pm_Bootstrap::getDbAdapter();
+$adapter->query('CREATE TABLE IF NOT EXISTS transip_domains (
+  `domain` VARCHAR(253) NOT NULL PRIMARY KEY,
+  `dns`    LONGTEXT
+)');
 
-    public function handleEvent($objectType, $objectId, $action, $oldValues, $newValues)
-    {
-        // Push all new/updated entries of this domain
-        $domain = new pm_Domain($objectId);
-        $savedDomains = @json_decode(pm_Settings::get(Modules_Transip_List_Domains::DOMAINS), true);
-        if (!is_array($savedDomains)) {
-            $savedDomains = [];
-        }
-        if (!in_array($domain->getName(), $savedDomains)) {
-            return;
-        }
-        Modules_Transip_Client::getInstance()->syncDomains([$domain->getName()]);
-    }
-}
-
-return new Modules_Transip_EventListener();
+exit(0);

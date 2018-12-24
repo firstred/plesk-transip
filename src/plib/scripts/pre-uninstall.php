@@ -29,4 +29,7 @@
 pm_Loader::registerAutoload();
 pm_Context::init('transip');
 
+$adapter = pm_Bootstrap::getDbAdapter();
+$adapter->query('DROP TABLE IF EXISTS `transip_domains`');
+
 exit(0);

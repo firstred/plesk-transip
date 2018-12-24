@@ -33,11 +33,18 @@ require_once __DIR__.'/../../vendor/autoload.php';
  */
 class Modules_Transip_Form_Settings extends pm_Form_Simple
 {
-    const USERNAME = 'username';
-    const PRIVATE_KEY = 'privateKey';
+    const USERNAME = 'transip_username';
+    const PRIVATE_KEY = 'transip_private_key';
+
+    const PRIVATE_KEY_PLACEHOLDER = '⚫⚫⚫⚫⚫⚫';
 
     private $isConsole = false;
 
+    /**
+     * Modules_Transip_Form_Settings constructor.
+     *
+     * @param array $options
+     */
     public function __construct($options = [])
     {
         if (!empty($options['isConsole'])) {
@@ -47,12 +54,15 @@ class Modules_Transip_Form_Settings extends pm_Form_Simple
         parent::__construct($options);
     }
 
+    /**
+     * Init
+     */
     public function init()
     {
         parent::init();
 
         $this->addElement('text', static::USERNAME, [
-            'label'      => pm_Locale::lmsg('usernameLabel'),
+            'label'      => pm_Locale::lmsg('transipUsernameLabel'),
             'value'      => pm_Settings::get(static::USERNAME),
             'class'      => 'f-large-size',
             'required'   => true,
@@ -61,8 +71,8 @@ class Modules_Transip_Form_Settings extends pm_Form_Simple
             ],
         ]);
         $this->addElement('textarea', static::PRIVATE_KEY, [
-            'label'      => pm_Locale::lmsg('privateKeyLabel'),
-            'value'      => pm_Settings::get(static::PRIVATE_KEY) ? 'hidden' : '',
+            'label'      => pm_Locale::lmsg('transipPrivateKeyLabel'),
+            'value'      => pm_Settings::get(static::PRIVATE_KEY) ? static::PRIVATE_KEY_PLACEHOLDER : '',
             'required'   => true,
             'validators' => [
                 ['NotEmpty', true],
@@ -73,6 +83,11 @@ class Modules_Transip_Form_Settings extends pm_Form_Simple
         ]);
     }
 
+    /**
+     * @param array $data
+     *
+     * @return bool
+     */
     public function isValid($data)
     {
         if (!parent::isValid($data)) {
@@ -86,11 +101,15 @@ class Modules_Transip_Form_Settings extends pm_Form_Simple
         return true;
     }
 
+    /**
+     * @return array|void
+     * @throws Zend_Db_Table_Exception
+     * @throws Zend_Db_Table_Row_Exception
+     * @throws pm_Exception_InvalidArgumentException
+     */
     public function process()
     {
         $res = [];
-
-        pm_Settings::set('enabled', $this->getValue('enabled'));
 
         $username = $this->getValue(static::USERNAME);
         $privateKey = $this->getValue(static::PRIVATE_KEY);
@@ -100,10 +119,18 @@ class Modules_Transip_Form_Settings extends pm_Form_Simple
         return $res;
     }
 
+    /**
+     * @param string $username
+     * @param string $privateKey
+     *
+     * @throws Zend_Db_Table_Exception
+     * @throws Zend_Db_Table_Row_Exception
+     * @throws pm_Exception_InvalidArgumentException
+     */
     private function saveUserData($username, $privateKey)
     {
         pm_Settings::set(static::USERNAME, $username);
-        if ($privateKey !== 'hidden') {
+        if ($privateKey !== static::PRIVATE_KEY_PLACEHOLDER) {
             pm_Settings::set(static::PRIVATE_KEY, $privateKey);
         }
 

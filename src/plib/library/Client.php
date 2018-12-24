@@ -94,28 +94,44 @@ class Modules_Transip_Client
      * @param $domains
      *
      * @throws SoapFault
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Profiler_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws pm_Exception
      */
     public function syncDomains($domains)
     {
         $transipDomains = $this->getDomainNames();
-        $savedDomains = @json_decode(pm_Settings::get(Modules_Transip_List_Domains::DOMAINS), true);
-        if (!is_array($savedDomains)) {
-            $savedDomains = [];
-        }
-        $domains = array_intersect($domains, $transipDomains, $savedDomains);
+        $domains = array_intersect($domains, $transipDomains);
         foreach ($domains as $domain) {
+            // Merge TransIP and local records
             $pleskDomain = pm_Domain::getByName($domain);
-            $records = static::getDomainInfo($pleskDomain->getId(), true);
+            $pleskRecords = static::getPleskDnsEntries($domain);
+            $newRecords = static::getTransipDnsEntries($domain);
+            foreach ($pleskRecords as $id => $pleskRecord) {
+                $newRecords[$id] = $pleskRecord;
+            }
+
+            // Detect removed domains and remove them from TransIP as well
+            $pleskRecordIds = array_keys($pleskRecords);
+            $removedRecords = [];
+            foreach (array_keys(static::getSavedDnsEntries($pleskDomain->getName())) as $savedId) {
+                if (!in_array($savedId, $pleskRecordIds)) {
+                    $removedRecords[] = $savedId;
+                    unset($newRecords[$savedId]);
+                }
+            }
+
             static::enableSoapEntityLoader();
-            $this->client->domain()->setDnsEntries($domain, $records);
+            $this->client->domain()->setDnsEntries($domain, array_values($newRecords));
             /** @var DnsEntry $entry */
-            $this->setDomainInfo($pleskDomain->getId(), array_map(function ($entry) {
+            $this->setDomainInfo($pleskDomain->getName(), array_map(function ($entry) {
                 return [
                     'type'  => $entry->type,
                     'host'  => $entry->name,
                     'value' => $entry->content,
                 ];
-            }, $records));
+            }, $pleskRecords));
         }
     }
 
@@ -130,21 +146,98 @@ class Modules_Transip_Client
     }
 
     /**
-     * Get domain info
+     * Return saved DNS entries
      *
-     * @param string $id Plesk Domain ID
-     * @param boolean $refresh When enabled, it will grab the latest info from Plesk
-     *                         instead of the cached setting.
+     * @param string $id ID = Domain name
      *
-     * @return array
+     * @return DnsEntry[]
+     * @throws pm_Exception
      */
-    public static function getDomainInfo($id, $refresh = false)
+    public static function getSavedDnsEntries($id)
     {
-        if (!$refresh) {
-            return (array) @json_decode(pm_Settings::get("domain_info_{$id}"), true);
+        return static::getDnsEntries($id, false);
+    }
+
+    /**
+     * Return Plesk DNS entries
+     *
+     * @param string $id ID = Domain name
+     *
+     * @return DnsEntry[]
+     * @throws pm_Exception
+     */
+    public static function getPleskDnsEntries($id)
+    {
+        return static::getDnsEntries($id, true);
+    }
+
+    /**
+     * @param string $id ID = Domain name
+     *
+     * @return DnsEntry[]
+     *
+     * @throws SoapFault
+     */
+    public static function getTransipDnsEntries($id)
+    {
+        return static::getInstance()->transipDnsEntries($id);
+    }
+
+    /**
+     * @param string $domainName ID = Domain name
+     *
+     * @return DnsEntry[]
+     *
+     * @throws SoapFault
+     */
+    public function transipDnsEntries($domainName)
+    {
+        $records = [];
+        foreach ($this->client->domain()->getInfo($domainName)->dnsEntries as $dnsEntry) {
+            $records["{$dnsEntry->name}||{$dnsEntry->type}||{$dnsEntry->content}"] = $dnsEntry;
         }
 
-        $pleskDomain = new pm_Domain($id);
+        return $records;
+    }
+
+    /**
+     * Get domain info
+     *
+     * @param string  $domainName Plesk ID = Domain name
+     * @param boolean $refresh    When enabled, it will grab the latest info from Plesk
+     *                            instead of the cached info.
+     *
+     * @return DnsEntry[]
+     * @throws pm_Exception
+     */
+    private static function getDnsEntries($domainName, $refresh = false)
+    {
+        if (!$refresh) {
+            try {
+                $db = pm_Bootstrap::getDbAdapter();
+                $localRecords = $db->fetchRow($db->select()->from('transip_domains')->where('domain = ?', $domainName));
+                if (!$localRecords) {
+                    $localRecords = ['dns' => ''];
+                }
+                $localRecords = isset($localRecords['dns']) ? $localRecords['dns'] : '';
+                $localRecords = (array) @json_decode($localRecords, true);
+            } catch (Exception $e) {
+                $localRecords = [];
+            }
+            $records = [];
+            foreach ($localRecords as $localRecord) {
+                // Skip invalid entries
+                if (!isset($localRecord['host']) || !isset($localRecord['type']) || !isset($localRecord['value'])) {
+                    continue;
+                }
+
+                $records["{$localRecord['host']}||{$localRecord['type']}||{$localRecord['value']}"] = new DnsEntry($localRecord['host'], 300, $localRecord['type'], $localRecord['value']);
+            }
+
+            return $records;
+        }
+
+        $pleskDomain = pm_Domain::getByName($domainName);
         $domain = $pleskDomain->getName();
 
         $request = <<<APICALL
@@ -152,7 +245,7 @@ class Modules_Transip_Client
 <dns>
  <get_rec>
   <filter>
-   <site-id>{$id}</site-id>
+   <site-id>{$pleskDomain->getId()}</site-id>
   </filter>
  </get_rec>
 </dns>
@@ -170,7 +263,7 @@ APICALL;
                     continue;
                 }
 
-                $records[] = new DnsEntry($host, 300, $type, $value);
+                $records["{$host}||{$type}||{$value}"] = new DnsEntry($host, 300, $type, $value);
             }
         }
 
@@ -180,11 +273,19 @@ APICALL;
     /**
      * Save domain info, in order to track changes
      *
-     * @param string $id   Plesk ID of domain
-     * @param array  $info DNS Entries
+     * @param string $domainName Plesk ID of domain
+     * @param array  $info       DNS Entries
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function setDomainInfo($id, $info)
+    private function setDomainInfo($domainName, $info)
     {
-        pm_Settings::set("domain_info_${id}", json_encode($info));
+        $db = pm_Bootstrap::getDbAdapter();
+        $db->delete('transip_domains', "`domain` = {$db->quote($domainName)}");
+        $db->insert('transip_domains', [
+            'domain' => $domainName,
+            'dns'    => json_encode($info),
+        ]);
     }
 }

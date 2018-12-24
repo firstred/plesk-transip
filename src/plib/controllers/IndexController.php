@@ -70,7 +70,9 @@ class IndexController extends pm_Controller_Action
             'title' => $this->lmsg('indexPageTitle'),
             'action' => 'index',
         ];
-        if (pm_Settings::get('privateKey')) {
+        if (pm_Settings::get(Modules_Transip_Form_Settings::USERNAME)
+            && pm_Settings::get(Modules_Transip_Form_Settings::PRIVATE_KEY)
+        ) {
             $tabs[] = [
                 'title' => $this->lmsg('domains'),
                 'action' => 'domains',
