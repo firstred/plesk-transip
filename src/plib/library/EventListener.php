@@ -34,28 +34,63 @@ class Modules_Transip_EventListener implements EventListener
     public function filterActions()
     {
         return [
+            'domain_create',
             'domain_dns_update',
         ];
     }
 
+    /**
+     * @param $objectType
+     * @param $objectId
+     * @param $action
+     * @param $oldValues
+     * @param $newValues
+     *
+     * @throws SoapFault
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Profiler_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Table_Exception
+     * @throws Zend_Db_Table_Row_Exception
+     * @throws pm_Exception
+     * @throws pm_Exception_InvalidArgumentException
+     */
     public function handleEvent($objectType, $objectId, $action, $oldValues, $newValues)
     {
-        // Push all new/updated entries of this domain
-        if (!pm_Settings::get(Modules_Transip_Form_Settings::USERNAME)
-            || !pm_Settings::get(Modules_Transip_Form_Settings::PRIVATE_KEY)
-        ) {
-            return;
-        }
+        pm_Context::init('transip');
+        switch ($action) {
+            case 'domain_create':
+                if (!pm_Settings::get(Modules_Transip_Form_Settings::NEW_DOMAINS)) {
+                    return;
+                }
 
-        $domain = new pm_Domain($objectId);
-        $savedDomains = @json_decode(pm_Settings::get(Modules_Transip_List_Domains::DOMAINS), true);
-        if (!is_array($savedDomains)) {
-            $savedDomains = [];
+                $pleskDomain = new pm_Domain($objectId);
+                $savedDomains = @json_decode(pm_Settings::get(Modules_Transip_List_Domains::DOMAINS), true);
+                if (!is_array($savedDomains)) {
+                    $savedDomains = [];
+                }
+                $savedDomains[] = $pleskDomain->getName();
+                pm_Settings::set(Modules_Transip_List_Domains::DOMAINS, json_encode($savedDomains));
+                break;
+            case 'domain_dns_update':
+                // Push all new/updated entries of this domain
+                if (!pm_Settings::get(Modules_Transip_Form_Settings::USERNAME)
+                    || !pm_Settings::get(Modules_Transip_Form_Settings::PRIVATE_KEY)
+                ) {
+                    return;
+                }
+
+                $domain = new pm_Domain($objectId);
+                $savedDomains = @json_decode(pm_Settings::get(Modules_Transip_List_Domains::DOMAINS), true);
+                if (!is_array($savedDomains)) {
+                    $savedDomains = [];
+                }
+                if (!in_array($domain->getName(), $savedDomains)) {
+                    return;
+                }
+                Modules_Transip_Client::getInstance()->syncDomains([$domain->getName()]);
+                break;
         }
-        if (!in_array($domain->getName(), $savedDomains)) {
-            return;
-        }
-        Modules_Transip_Client::getInstance()->syncDomains([$domain->getName()]);
     }
 }
 
