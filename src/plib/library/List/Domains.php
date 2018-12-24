@@ -22,8 +22,8 @@
  * IN THE SOFTWARE.
  *
  * @copyright 2018-2019 Michael Dekker
- * @author Michael Dekker <info@trendweb.io>
- * @license MIT
+ * @author    Michael Dekker <info@trendweb.io>
+ * @license   MIT
  */
 
 /**
@@ -42,7 +42,7 @@ class Modules_Transip_List_Domains extends pm_View_List_Simple
 
         $this->setColumns([
             pm_View_List_Simple::COLUMN_SELECTION,
-            'domain' => [
+            'domain'  => [
                 'title'    => $this->lmsg('domainsColumn'),
                 'noEscape' => true,
             ],
@@ -61,21 +61,21 @@ class Modules_Transip_List_Domains extends pm_View_List_Simple
 
         $this->setTools([
             [
-                'title'       => $this->lmsg('enableDomainsButton'),
-                'description' => $this->lmsg('enableDomainsHint'),
-                'class'       => 'sb-switch-service',
+                'title'              => $this->lmsg('enableDomainsButton'),
+                'description'        => $this->lmsg('enableDomainsHint'),
+                'class'              => 'sb-switch-service',
                 'execGroupOperation' => $this->helper->url('enable-domains'),
             ],
             [
-                'title'       => $this->lmsg('disableDomainsButton'),
-                'description' => $this->lmsg('disableDomainsHint'),
-                'class'       => 'sb-disable',
+                'title'              => $this->lmsg('disableDomainsButton'),
+                'description'        => $this->lmsg('disableDomainsHint'),
+                'class'              => 'sb-disable',
                 'execGroupOperation' => $this->helper->url('disable-domains'),
             ],
             [
-                'title'       => $this->lmsg('syncDomainsButton'),
-                'description' => $this->lmsg('syncDomainsHint'),
-                'class'       => 'sb-refresh',
+                'title'              => $this->lmsg('syncDomainsButton'),
+                'description'        => $this->lmsg('syncDomainsHint'),
+                'class'              => 'sb-refresh',
                 'execGroupOperation' => $this->helper->url('sync-domains'),
             ],
         ]);

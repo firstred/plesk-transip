@@ -35,6 +35,8 @@ require_once __DIR__.'/../vendor/autoload.php';
  */
 class Modules_Transip_Client
 {
+    const SERVICE_VERSION = '1.6.9.1';
+
     /**
      * @var \TransIP\Client $client
      */
@@ -212,6 +214,7 @@ class Modules_Transip_Client
      */
     private static function getDnsEntries($domainName, $refresh = false)
     {
+        $pleskDomain = pm_Domain::getByName($domainName);
         if (!$refresh) {
             try {
                 $db = pm_Bootstrap::getDbAdapter();
@@ -231,15 +234,14 @@ class Modules_Transip_Client
                     continue;
                 }
 
-                $records["{$localRecord['host']}||{$localRecord['type']}||{$localRecord['value']}"] = new DnsEntry($localRecord['host'], 300, $localRecord['type'], $localRecord['value']);
+                $records["{$localRecord['host']}||{$localRecord['type']}||{$localRecord['value']}"]
+                    = new DnsEntry($localRecord['host'], Modules_Transip_Form_Settings::getTtl($pleskDomain->getId()), $localRecord['type'], $localRecord['value']);
             }
 
             return $records;
         }
 
-        $pleskDomain = pm_Domain::getByName($domainName);
         $domain = $pleskDomain->getName();
-
         $request = <<<APICALL
 <packet>
 <dns>
@@ -252,7 +254,7 @@ class Modules_Transip_Client
 </packet>
 APICALL;
         $records = [];
-        $response = pm_ApiRpc::getService('1.6.9.1')->call($request);
+        $response = pm_ApiRpc::getService(static::SERVICE_VERSION)->call($request);
         if (isset($response->dns->get_rec->result)) {
             foreach (json_decode(json_encode($response->dns->get_rec), true)['result'] as $localRecord) {
                 $host = rtrim(str_replace("$domain.", '@', str_replace(".$domain.", '', $localRecord['data']['host'])), '.');
@@ -263,7 +265,7 @@ APICALL;
                     continue;
                 }
 
-                $records["{$host}||{$type}||{$value}"] = new DnsEntry($host, 300, $type, $value);
+                $records["{$host}||{$type}||{$value}"] = new DnsEntry($host, Modules_Transip_Form_Settings::getTtl($pleskDomain->getId()), $type, $value);
             }
         }
 

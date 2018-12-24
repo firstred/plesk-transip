@@ -41,6 +41,12 @@ class Modules_Transip_EventListener implements EventListener
     public function handleEvent($objectType, $objectId, $action, $oldValues, $newValues)
     {
         // Push all new/updated entries of this domain
+        if (!pm_Settings::get(Modules_Transip_Form_Settings::USERNAME)
+            || !pm_Settings::get(Modules_Transip_Form_Settings::PRIVATE_KEY)
+        ) {
+            return;
+        }
+
         $domain = new pm_Domain($objectId);
         $savedDomains = @json_decode(pm_Settings::get(Modules_Transip_List_Domains::DOMAINS), true);
         if (!is_array($savedDomains)) {

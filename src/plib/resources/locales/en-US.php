@@ -59,4 +59,7 @@ $messages = [
     'enableAutoSync'                 => 'Enable auto sync',
     'disableAutoSync'                => 'Disable auto sync',
     'domainsProcessed'               => 'The domains have been processed',
+    'overrideTtlLabel'               => 'Override TTL',
+    'overrideTtlHint'                => 'Please enter a value in seconds. Leave empty to use Plesk\'s default.',
+    'syncNewDomainsLabel'            => 'Sync new domains automatically',
 ];
